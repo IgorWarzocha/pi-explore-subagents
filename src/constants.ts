@@ -1,0 +1,60 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { StringEnum } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
+import type { ExploreConfig, ExploreMode, ThinkingLevel } from "./types.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, "..");
+
+export const CONFIG_PATH = path.join(ROOT_DIR, "config.json");
+export const CHILD_ENV = "PI_EXPLORE_SUBAGENT_CHILD";
+export const TOOL_NAME = "explore_subagent";
+export const TOOL_LABEL = "Explore Subagent";
+
+export const SHALLOW_PROMPT_PATH = path.join(ROOT_DIR, "shallow.prompt.md");
+export const DEEP_PROMPT_PATH = path.join(ROOT_DIR, "deep.prompt.md");
+
+export const DEFAULT_CONFIG: Record<ExploreMode, Required<ExploreConfig>> = {
+	shallow: {
+		model: "openai-codex/gpt-5.3-codex-spark",
+		thinking: "medium",
+	},
+	deep: {
+		model: "openai-codex/gpt-5.4-mini",
+		thinking: "low",
+	},
+};
+
+export const MODE_SPECS = {
+	shallow: {
+		label: "Shallow",
+		shortDescription: "Tight, bounded scan. Find key files and stop early.",
+		promptPath: SHALLOW_PROMPT_PATH,
+		systemPreamble: "Stay strictly in discovery mode.",
+	},
+	deep: {
+		label: "Deep",
+		shortDescription: "Broad scan. Good for surveys, triage, and compare/rank work.",
+		promptPath: DEEP_PROMPT_PATH,
+		systemPreamble: "Stay strictly in discovery mode.",
+	},
+} as const;
+
+export const ALLOWED_THINKING = new Set<ThinkingLevel>(["off", "minimal", "low", "medium", "high", "xhigh"]);
+export const RPC_READY_TIMEOUT_MS = 10_000;
+export const RPC_RESPONSE_TIMEOUT_MS = 30_000;
+export const RPC_POLL_MS = 150;
+export const RPC_QUIESCENCE_MS = 500;
+
+export const ExploreModeSchema = StringEnum(["shallow", "deep"] as const, {
+	description: "shallow | deep",
+}) as any;
+
+export const ExploreParams = Type.Object({
+	task: Type.String({
+		description: "Standalone task brief.",
+	}),
+	mode: ExploreModeSchema,
+	cwd: Type.Optional(Type.String({ description: "Working directory. Defaults to current cwd." })),
+}) as any;

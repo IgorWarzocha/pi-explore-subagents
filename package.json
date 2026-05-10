@@ -1,0 +1,43 @@
+{
+  "name": "@howaboua/pi-explore-subagent",
+  "version": "0.1.0",
+  "description": "Pi extension for isolated discovery-only subagents.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Igor Warzocha",
+  "files": [
+    "index.ts",
+    "src",
+    "config.json",
+    "shallow.prompt.md",
+    "deep.prompt.md",
+    "README.md"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit",
+    "prepack": "npm run check"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "typebox": "^1.1.38"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-tui": "^0.74.0",
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
