@@ -14,10 +14,10 @@ export function registerExploreTool(pi: ExtensionAPI) {
 		description: "Run an isolated discovery-only subagent.",
 		promptSnippet: "Run an isolated discovery-only subagent.",
 		promptGuidelines: [
-			"`explore_subagent`: Net-new discovery only; don't reread already-checked files.",
-			"`explore_subagent`: Use `deep` for broad, open-ended, triage, compare/rank, or revisit-heavy scans.",
-			"`explore_subagent`: No inherited context; include background, exact question, scope, constraints, cwd, and desired evidence.",
-			"`explore_subagent`: Discovery only: inspect/summarize, no edits.",
+			"explore_subagent: Net-new discovery only; don't reread already-checked files.",
+			"explore_subagent: Use `deep` for broad, open-ended, triage, compare/rank, or revisit-heavy scans.",
+			"explore_subagent: No inherited context; include background, exact question, scope, constraints, cwd, and desired evidence.",
+			"explore_subagent: Discovery only: inspect/summarize, no edits.",
 		],
 		parameters: ExploreParams,
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
