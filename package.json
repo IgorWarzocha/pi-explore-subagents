@@ -1,6 +1,6 @@
 {
   "name": "@howaboua/pi-explore-subagents",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Isolated discovery-only explore subagents for Pi.",
   "type": "module",
   "license": "MIT",
@@ -47,5 +47,13 @@
     "subagent",
     "codebase-discovery",
     "reconnaissance"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IgorWarzocha/pi-explore-subagents.git"
+  },
+  "homepage": "https://github.com/IgorWarzocha/pi-explore-subagents#readme",
+  "bugs": {
+    "url": "https://github.com/IgorWarzocha/pi-explore-subagents/issues"
+  }
 }
