@@ -1,179 +1,89 @@
-# pi-explore-subagent
+# pi-explore-subagents
 
-`pi-explore-subagent` adds:
-- one Pi tool: `explore_subagent`
+Give Pi a second set of eyes. `pi-explore-subagents` adds an isolated discovery tool that lets Pi send focused reconnaissance work to a child agent before the main agent edits anything. It is built for the moment when a codebase is unfamiliar, the right files are not obvious, or you want evidence gathered without dragging all of that exploration into the primary session.
 
-It is meant for **reconnaissance**: finding the right files, tracing behavior, and gathering evidence before deciding what to change.
+## What it does
 
-## What this is for
+This package gives Pi agents a dedicated `explore_subagent` tool. It is not meant to be called directly by users; agents use it when they need isolated reconnaissance before acting.
 
-Use `explore_subagent` when you want Pi to:
-- inspect an unfamiliar area of a codebase
-- find the files and symbols that matter
-- trace behavior across multiple files
-- return evidence and next reads
-- do this in an **isolated subagent** instead of mixing everything into the main session
+The tool starts a separate, no-session Pi subprocess with a discovery-only prompt. The subagent can inspect files, trace relationships, and report back with paths, line ranges, unknowns, and suggested next reads. It does not inherit the parent conversation, and it is instructed not to edit files.
 
-This tool is for **discovery only**.
-It does **not** edit files.
+Use it for:
 
-## Important behavior
-
-The subagent is **isolated**.
-It does **not** inherit:
-- the parent agent's conversation
-- the parent agent's plan
-- unstated context in the current session
-
-So the task you send must be a **complete standalone brief**.
+- finding the right entry points in an unfamiliar repo
+- tracing a behavior across nearby files
+- surveying a subsystem before implementation
+- collecting evidence before making a change
+- keeping broad exploration out of the main context
 
 ## Modes
 
+`explore_subagent` has two modes:
+
 ### `shallow`
-Use this for **narrow, bounded recon**.
 
-Best for:
-- locating the right files
-- finding entry points
-- identifying immediate relationships
-- getting the best next files to read
+Fast, bounded reconnaissance. Use it with cheaper, faster, or less capable models when you only need hotspots, entry points, and the next few files to read.
 
-Not for:
-- repo-wide surveys
-- ranking or triage across many candidates
-- tasks likely to revisit lots of files
+Good for:
 
-`shallow` should stop early once it has found the likely hotspots.
+- quick orientation
+- finding likely files
+- narrow questions
+- stopping early before the search sprawls
 
 ### `deep`
-Use this for **wide or open-ended recon**.
 
-Best for:
-- following call paths across files
-- understanding configuration and scripts
-- tracing supporting code and boundaries
-- building a more complete system map before editing
-- repo surveys, triage, and compare/rank/select work
+Wider reconnaissance for longer investigations. Use it with a stronger model when the task needs cross-file synthesis, triage, or a more complete map.
 
-## Default config
+Good for:
 
-Edit `config.json` if you want to change models or thinking levels:
+- repo or subsystem surveys
+- following call paths
+- compare/rank/select work
+- tracing config, scripts, tests, and boundaries
+
+## Install
+
+```bash
+pi install npm@pi-explore-subagents
+```
+
+You can also clone the package and install your local copy if you want to tune the prompts, model choices, or mode behavior for your own workflow. That is often the best setup because every agent stack and codebase is a little different.
+
+## Configuration
+
+The package includes a simple `config.json` with separate model settings for each mode. A good starting point is to keep `shallow` fast and inexpensive, and reserve `deep` for longer work:
 
 ```json
 {
   "shallow": {
     "model": "openai-codex/gpt-5.3-codex-spark",
-    "thinking": "medium"
+    "thinking": "low"
   },
   "deep": {
     "model": "openai-codex/gpt-5.4-mini",
-    "thinking": "low"
+    "thinking": "medium"
   }
 }
 ```
 
-## Install
+## Usage
 
-Add this directory to your Pi extensions:
+Ask Pi naturally. The tool is for agents, not for direct user calls. When an agent uses it, it should provide a complete standalone brief, choose `shallow` or `deep`, and optionally set the working directory.
 
-```json
-{
-  "extensions": [
-    "/home/igorw/Work/pi-explore-subagent"
-  ]
-}
-```
+Because the subagent is isolated, the agent should include the context it needs in the task itself: project path, the exact question, relevant files or symbols, constraints, and the kind of evidence you want back.
 
-Then reload or restart Pi.
+Example:
 
-## How to use it
+> Use a shallow explore subagent to find where authentication errors are rendered. Stay discovery-only. Return likely files, line ranges, and the best next reads.
 
-`explore_subagent` accepts:
-- `task` — the reconnaissance brief
-- `mode` — required: `shallow` or `deep`
-- `cwd` — optional working directory
+For broader work:
 
-In normal use, you usually just ask Pi naturally and let it decide when to call the tool.
+> Use a deep explore subagent to map the flow from CLI argument parsing to command execution. Include config and test boundaries. Stay discovery-only and return evidence by file and line range.
 
-## How to write a good task
+## In short
 
-Because the subagent is isolated, good tasks matter a lot.
-
-A good task should include:
-- the background
-- the exact question
-- relevant files, directories, or symbols
-- constraints
-- the kind of evidence you want back
-
-Good example:
-
-> Project: `/home/igorw/Work/howcode`.
-> Inspect how the diff panel uses `@pierre/diffs`.
-> Find the entry points, the main rendering path, and any files that transform diff data before rendering.
-> Stay in discovery mode only.
-> Return file paths, line ranges, and the best next reads.
-
-Better `deep` example:
-
-> Project: `/home/igorw/Work/howcode`.
-> Trace the full flow from diff data creation to diff panel rendering.
-> Include relevant config, adapter layers, and any code that changes the shape of the diff data.
-> Stay in discovery mode only.
-> Return a system map with evidence by file and line range.
-
-## When to choose each mode
-
-Choose `shallow` when you want:
-- the right starting points
-- likely hotspots
-- quick orientation
-- a smaller, more bounded scan
-
-Choose `deep` when you want:
-- a wide or open-ended scan
-- triage or comparison across many candidates
-- stronger cross-file synthesis
-
-## Best practices
-
-For best results:
-- use `explore_subagent` for **net-new reconnaissance**
-- give it the full brief up front
-- prefer `shallow` when the search frontier is small
-- prefer `deep` when the task is broad, comparative, or likely to revisit lots of context
-- avoid asking it to repeat file reads the parent agent already completed
-
-## Troubleshooting
-
-### The results feel vague
-Your task probably needs more context.
-Add:
-- the project path
-- the exact symbol, feature, or behavior
-- what kind of evidence you want
-
-### It explores too much
-Use `mode: "shallow"` and phrase the task as a surface scan.
-Ask for:
-- likely hotspots
-- immediate relationships
-- best next reads
-
-If the task is simple but broad (for example triage or quick-win selection across many issues), use `deep`.
-
-### You see `context_length_exceeded`
-Try one or more of these:
-- shorten the task brief
-- narrow the scope to one subsystem or one question
-- use `deep` if the investigation is inherently large
-- ask for a `shallow` pass first, then a focused `deep` pass
-
-## Summary
-
-`explore_subagent` is best when you want Pi to do isolated evidence gathering before implementation.
-
-- `shallow` = bounded surface scan
-- `deep` = wide/open-ended recon
-- always provide a full standalone brief
-- use it for discovery, not editing
+- `shallow` is for fast, bounded scans.
+- `deep` is for wider, longer investigations.
+- Subagents are isolated and discovery-only.
+- Better briefs produce better evidence.

@@ -15,6 +15,7 @@ export function registerExploreTool(pi: ExtensionAPI) {
 		promptSnippet: "Run an isolated discovery-only subagent.",
 		promptGuidelines: [
 			"explore_subagent: Net-new discovery only; don't reread already-checked files.",
+			"explore_subagent: Use `shallow` for narrow, bounded scans where you only need likely hotspots, entry points, or best next reads.",
 			"explore_subagent: Use `deep` for broad, open-ended, triage, compare/rank, or revisit-heavy scans.",
 			"explore_subagent: No inherited context; include background, exact question, scope, constraints, cwd, and desired evidence.",
 			"explore_subagent: Discovery only: inspect/summarize, no edits.",
