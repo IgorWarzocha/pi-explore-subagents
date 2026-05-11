@@ -45,7 +45,7 @@ Good for:
 ## Install
 
 ```bash
-pi install npm@pi-explore-subagents
+pi install npm:@howaboua/pi-explore-subagents
 ```
 
 You can also clone the package and install your local copy if you want to tune the prompts, model choices, or mode behavior for your own workflow. That is often the best setup because every agent stack and codebase is a little different.

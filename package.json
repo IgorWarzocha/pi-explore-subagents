@@ -1,5 +1,5 @@
 {
-  "name": "pi-explore-subagents",
+  "name": "@howaboua/pi-explore-subagents",
   "version": "0.1.0",
   "description": "Isolated discovery-only explore subagents for Pi.",
   "type": "module",
