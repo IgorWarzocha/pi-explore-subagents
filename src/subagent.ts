@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { CHILD_ENV, MODE_SPECS, RPC_POLL_MS, RPC_QUIESCENCE_MS, RPC_READY_TIMEOUT_MS, RPC_RESPONSE_TIMEOUT_MS, TOOL_LABEL } from "./constants.js";
+import { CHILD_ENV, MODE_SPECS, RPC_POLL_MS, RPC_QUIESCENCE_MS, TOOL_LABEL } from "./constants.js";
 import { createChildRunDetails, readConfig } from "./config.js";
 import { getFinalOutput, getToolCalls, sleep } from "./messages.js";
 import type { ExploreMode } from "./types.js";
@@ -47,7 +47,6 @@ export async function runSubagent(
 		{
 			resolve: (value: any) => void;
 			reject: (error: Error) => void;
-			timeout: ReturnType<typeof setTimeout>;
 		}
 	>();
 
@@ -70,13 +69,12 @@ export async function runSubagent(
 
 	const rejectPendingRequests = (error: Error) => {
 		for (const pending of pendingRequests.values()) {
-			clearTimeout(pending.timeout);
 			pending.reject(error);
 		}
 		pendingRequests.clear();
 	};
 
-	const sendCommand = <T = unknown>(command: Record<string, unknown>, timeoutMs = RPC_RESPONSE_TIMEOUT_MS): Promise<T> => {
+	const sendCommand = <T = unknown>(command: Record<string, unknown>): Promise<T> => {
 		if (processClosed || !proc.stdin.writable) {
 			throw new Error(`Subagent RPC process is not available.${details.stderr ? ` Stderr: ${details.stderr.trim()}` : ""}`);
 		}
@@ -85,15 +83,9 @@ export async function runSubagent(
 		const payload = JSON.stringify({ ...command, id }) + "\n";
 
 		return new Promise<T>((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				pendingRequests.delete(id);
-				reject(new Error(`Timed out waiting for RPC response to ${String(command.type)}.${details.stderr ? ` Stderr: ${details.stderr.trim()}` : ""}`));
-			}, timeoutMs);
-
-			pendingRequests.set(id, { resolve, reject, timeout });
+			pendingRequests.set(id, { resolve, reject });
 			proc.stdin.write(payload, (error) => {
 				if (!error) return;
-				clearTimeout(timeout);
 				pendingRequests.delete(id);
 				reject(error instanceof Error ? error : new Error(String(error)));
 			});
@@ -140,7 +132,6 @@ export async function runSubagent(
 
 		if (data.type === "response" && typeof data.id === "string" && pendingRequests.has(data.id)) {
 			const pending = pendingRequests.get(data.id)!;
-			clearTimeout(pending.timeout);
 			pendingRequests.delete(data.id);
 			if (data.success === false) {
 				pending.reject(new Error(typeof data.error === "string" ? data.error : `RPC ${data.command ?? "command"} failed`));
@@ -157,12 +148,7 @@ export async function runSubagent(
 		if (processClosed) return;
 		stoppedAfterCompletion = true;
 		proc.kill("SIGTERM");
-		await Promise.race([
-			new Promise<void>((resolve) => proc.once("close", () => resolve())),
-			sleep(1_000).then(() => {
-				if (!processClosed) proc.kill("SIGKILL");
-			}),
-		]);
+		await new Promise<void>((resolve) => proc.once("close", () => resolve()));
 	};
 
 	proc.stdout.on("data", (chunk) => {
@@ -194,7 +180,7 @@ export async function runSubagent(
 		if (wasAborted) return;
 		wasAborted = true;
 		try {
-			await sendCommand({ type: "abort" }, 5_000);
+			await sendCommand({ type: "abort" });
 		} catch {
 			if (!processClosed) proc.kill("SIGTERM");
 		}
@@ -208,7 +194,7 @@ export async function runSubagent(
 	}
 
 	try {
-		await sendCommand({ type: "get_state" }, RPC_READY_TIMEOUT_MS);
+		await sendCommand({ type: "get_state" });
 		await sendCommand({ type: "set_auto_compaction", enabled: true });
 		await sendCommand({ type: "set_auto_retry", enabled: true });
 		await sendCommand({ type: "prompt", message: promptText });

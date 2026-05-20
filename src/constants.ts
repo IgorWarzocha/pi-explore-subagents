@@ -42,8 +42,6 @@ export const MODE_SPECS = {
 } as const;
 
 export const ALLOWED_THINKING = new Set<ThinkingLevel>(["off", "minimal", "low", "medium", "high", "xhigh"]);
-export const RPC_READY_TIMEOUT_MS = 10_000;
-export const RPC_RESPONSE_TIMEOUT_MS = 30_000;
 export const RPC_POLL_MS = 150;
 export const RPC_QUIESCENCE_MS = 500;
 
