@@ -63,9 +63,27 @@ export async function runSubagent(
 	const proc = spawn("pi", args, {
 		cwd,
 		shell: false,
+		detached: process.platform !== "win32",
 		stdio: ["pipe", "pipe", "pipe"],
 		env: { ...process.env, [CHILD_ENV]: "1" },
 	});
+
+	const signalProcess = (signalName: NodeJS.Signals) => {
+		if (processClosed) return;
+		try {
+			if (process.platform !== "win32" && proc.pid) {
+				process.kill(-proc.pid, signalName);
+			} else {
+				proc.kill(signalName);
+			}
+		} catch {
+			try {
+				proc.kill(signalName);
+			} catch {
+				// Process may already be gone.
+			}
+		}
+	};
 
 	const rejectPendingRequests = (error: Error) => {
 		for (const pending of pendingRequests.values()) {
@@ -147,7 +165,7 @@ export async function runSubagent(
 	const stopProcess = async () => {
 		if (processClosed) return;
 		stoppedAfterCompletion = true;
-		proc.kill("SIGTERM");
+		signalProcess("SIGTERM");
 		await new Promise<void>((resolve) => proc.once("close", () => resolve()));
 	};
 
@@ -179,11 +197,15 @@ export async function runSubagent(
 	const abort = async () => {
 		if (wasAborted) return;
 		wasAborted = true;
-		try {
-			await sendCommand({ type: "abort" });
-		} catch {
-			if (!processClosed) proc.kill("SIGTERM");
+		rejectPendingRequests(new Error(`${TOOL_LABEL} aborted`));
+
+		if (!processClosed && proc.stdin.writable) {
+			const id = `req_${++requestId}`;
+			proc.stdin.write(JSON.stringify({ type: "abort", id }) + "\n", () => undefined);
 		}
+
+		signalProcess("SIGTERM");
+		signalProcess("SIGKILL");
 	};
 
 	if (signal) {
