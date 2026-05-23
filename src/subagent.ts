@@ -34,7 +34,8 @@ export async function runSubagent(
 	].join("\n\n");
 
 	let lastEventAt = Date.now();
-	let agentEndCount = 0;
+	let terminalAgentEndSeen = false;
+	let retryInProgress = false;
 	let promptSent = false;
 	let wasAborted = false;
 	let processClosed = false;
@@ -134,8 +135,24 @@ export async function runSubagent(
 			return;
 		}
 
+		if (event.type === "auto_retry_start") {
+			retryInProgress = true;
+			terminalAgentEndSeen = false;
+			return;
+		}
+
+		if (event.type === "auto_retry_end") {
+			retryInProgress = false;
+			return;
+		}
+
 		if (event.type === "agent_end") {
-			agentEndCount++;
+			if (event.willRetry === true) {
+				retryInProgress = true;
+				terminalAgentEndSeen = false;
+			} else {
+				terminalAgentEndSeen = true;
+			}
 		}
 	};
 
@@ -238,7 +255,7 @@ export async function runSubagent(
 			const isIdle = !state.isStreaming && !state.isCompacting && state.pendingMessageCount === 0;
 			const isQuiet = Date.now() - lastEventAt >= RPC_QUIESCENCE_MS;
 
-			if (promptSent && agentEndCount > 0 && isIdle && isQuiet) {
+			if (promptSent && terminalAgentEndSeen && !retryInProgress && isIdle && isQuiet) {
 				break;
 			}
 		}
