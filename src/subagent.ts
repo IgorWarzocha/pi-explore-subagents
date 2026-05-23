@@ -146,11 +146,18 @@ export async function runSubagent(
 			return;
 		}
 
+		if (event.type === "compaction_end" && event.willRetry === true) {
+			retryInProgress = true;
+			terminalAgentEndSeen = false;
+			return;
+		}
+
 		if (event.type === "agent_end") {
 			if (event.willRetry === true) {
 				retryInProgress = true;
 				terminalAgentEndSeen = false;
 			} else {
+				retryInProgress = false;
 				terminalAgentEndSeen = true;
 			}
 		}
